@@ -17,8 +17,11 @@ import Skeleton from '@mui/material/Skeleton';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { invoke } from '@tauri-apps/api';
+import Tabla from './Tabla';
+import { fs } from '@tauri-apps/api';
+import Grafico from './grafico';
 
-const RigthDrawer = ({ open, handler, seleccionado, blockManager}) => {
+const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
 
     const [drawerWidth, setDrawerWidth] = useState(window.innerWidth * 0.33);
     const [desde, setDesde] = useState(2012);
@@ -139,6 +142,8 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager}) => {
 
 
     const [estado, setEstado] = useState(0);
+    const [dataFile, setDataFile] = useState([])
+
     function renderTabla(value) {
         switch (value) {
             case 0:
@@ -156,23 +161,50 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager}) => {
                     </Box>
                 );
             case 1:
-                return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden"}} size={drawerWidth * 0.8} />);
+                return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden" }} size={drawerWidth * 0.8} />);
             case 2:
-                return <div />
+                return <Tabla rows={dataFile} />
         }
     };
 
-    const [fileReady, setReady] = useState(false);
+    function renderGraph(value) {
+        switch (value) {
+            case 0:
+                return (
+                    <Box sx={{ maxHeight: window.innerHeight * 0.65 }} overflow={"auto"}>
+                        <Grid item container border={1} borderColor={"lightgray"} borderRadius={2} xs={8}>
+                            <Grid item xs={12}> <Skeleton variant="rectangular" animation="wave" height={window.innerHeight * 0.3} /> </Grid>
+                        </Grid>
+                    </Box>
+                );
+            case 1:
+                return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden" }} size={drawerWidth * 0.8} />);
+            case 2:
+                return <Grafico rows={dataFile}/>
+        }
+    };
 
     const changeState = () => {
         if (estado == 0 || estado == 2) {
             setEstado(1);
             blockManager(true);
-            invoke("create_file", { name: seleccionado }).then(() =>{setEstado(2); blockManager(false)})
+            invoke("create_file", { name: seleccionado })
+                .then(() => {
+                    fs.readTextFile("Pantanos\\data.json", { dir: fs.BaseDirectory.Temp })
+                        .then((message) => {
+                            setEstado(2);
+                            blockManager(false);
+                            let data = JSON.parse(message);
+
+                            let rows = [];
+                            for (let i = 0; i < data["prediction"].length; i++) {
+                                rows.push({"expected": data["original"][i], "predicted": data["prediction"][i] })
+                            }
+                            setDataFile(rows);
+                        });
+                })
         }
     };
-
-
 
     return (
         <Drawer
@@ -240,6 +272,7 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager}) => {
                         </Select>
                     </FormControl>
                 </Grid>
+
                 <Box sx={{ width: '100%' }} marginTop={1}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <Tabs value={tabValue} onChange={handleTabChange} variant={"scrollable"}>
@@ -247,20 +280,23 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager}) => {
                             <Tab label="Gráfica" {...a11yProps(1)} />
                         </Tabs>
                     </Box>
-                    <TabPanel value={tabValue} index={0} >
-                        {renderTabla(estado)}
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={1}>
-                        Item Two
-                    </TabPanel>
+                    <Grid item xs={12} xl={10}>
+                        <TabPanel value={tabValue} index={0} >
+                            {renderTabla(estado)}
+                        </TabPanel>
+                        <TabPanel value={tabValue} index={1}>
+                            {renderGraph(estado)}
+                        </TabPanel>
+                    </Grid>
                 </Box>
+
                 <Grid item container direction={"row-reverse"} justifyContent={"flex-start"} alignItems={"center"} paddingRight={4}>
                     <Grid item>
-                        <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={changeState}>Generar</Button>
+                        <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={changeState} marginBottom={5}>Generar</Button>
                     </Grid>
                 </Grid>
             </Grid>
-        </Drawer>
+        </Drawer >
     )
 }
 

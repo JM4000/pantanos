@@ -13,10 +13,6 @@ function App() {
         setSelected(name);
     };
 
-    useEffect(() => {
-        console.log(selected);
-    }, [selected]);
-
     const handleDrawerClose = () => {
         if(!block){
             setOpen(false);

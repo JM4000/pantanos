@@ -16,7 +16,7 @@ const Mapa = ({handlerOpen, block}) => {
         />
         {Pantanos.map((pantano) => 
           <Marker key={pantano.Nombre} position={[pantano.Latitud, pantano.Longitud]} 
-            eventHandlers={{click: () =>{if(!block){handlerOpen({name: pantano.Nombre}); console.log(block)}},
+            eventHandlers={{click: () =>{if(!block){handlerOpen({name: pantano.Nombre})}},
             mouseover: (event) => event.target.openPopup(),
             mouseout: (event) =>event.target.closePopup()}}>
           <Popup>

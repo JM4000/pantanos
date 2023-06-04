@@ -12,19 +12,30 @@ fn greet(name: &str) -> String {
 
 #[tauri::command(async)]
 fn create_file(name: &str) -> String {
-    let mut dir = env::current_dir().unwrap().into_os_string().into_string().unwrap();
+    let mut dir = env::current_dir()
+        .unwrap()
+        .into_os_string()
+        .into_string()
+        .unwrap();
     dir.push_str("\\Data\\pantanos.exe");
 
     Command::new(dir)
-                .arg(name)
-                .status()
-                .expect("command failed to start");
+        .arg(name)
+        .status()
+        .expect("command failed to start");
     name.into()
+}
+
+#[tauri::command]
+fn tmp_path() -> String {
+    let dir = env::temp_dir().display().to_string();
+    dir.into()
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, create_file])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    .invoke_handler(tauri::generate_handler![greet, create_file, tmp_path])
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
+
 }
