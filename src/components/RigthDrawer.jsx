@@ -4,10 +4,6 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { styled } from '@mui/material/styles';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
 import Grid from '@mui/material/Grid';
 import PropTypes from 'prop-types';
 import Tabs from '@mui/material/Tabs';
@@ -20,69 +16,14 @@ import { invoke } from '@tauri-apps/api';
 import Tabla from './Tabla';
 import { fs } from '@tauri-apps/api';
 import Grafico from './grafico';
+import { DatePicker } from '@mui/x-date-pickers'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import dayjs from 'dayjs'
 
 const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
 
     const [drawerWidth, setDrawerWidth] = useState(window.innerWidth * 0.33);
-    const [desde, setDesde] = useState(2012);
-    const [hasta, setHasta] = useState(2022);
-
-    const optionsDesde = [
-        { value: 2012, label: "2012", disabled: false },
-        { value: 2013, label: "2013", disabled: false },
-        { value: 2014, label: "2014", disabled: false },
-        { value: 2015, label: "2015", disabled: false },
-        { value: 2016, label: "2016", disabled: false },
-        { value: 2017, label: "2017", disabled: false },
-        { value: 2018, label: "2018", disabled: false },
-        { value: 2019, label: "2019", disabled: false },
-        { value: 2020, label: "2020", disabled: false },
-        { value: 2021, label: "2021", disabled: false },
-        { value: 2022, label: "2022", disabled: false },
-    ];
-
-    const optionsHasta = [
-        { value: 2012, label: "2012", disabled: false },
-        { value: 2013, label: "2013", disabled: false },
-        { value: 2014, label: "2014", disabled: false },
-        { value: 2015, label: "2015", disabled: false },
-        { value: 2016, label: "2016", disabled: false },
-        { value: 2017, label: "2017", disabled: false },
-        { value: 2018, label: "2018", disabled: false },
-        { value: 2019, label: "2019", disabled: false },
-        { value: 2020, label: "2020", disabled: false },
-        { value: 2021, label: "2021", disabled: false },
-        { value: 2022, label: "2022", disabled: false },
-    ];
-
-    const [arrayDesde, setArrayD] = useState(optionsDesde);
-    const [arrayHasta, setArrayH] = useState(optionsHasta);
-
-    const handleDesde = (event) => {
-        setDesde(event.target.value);
-        let dummyArrayD = optionsDesde;
-        dummyArrayD.forEach(element => {
-            if (element.value < event.target.value) {
-                element.disabled = true;
-            } else {
-                element.disabled = false;
-            }
-        });
-        setArrayH(dummyArrayD);
-    };
-
-    const handleHasta = (event) => {
-        setHasta(event.target.value);
-        let dummyArrayH = optionsDesde;
-        dummyArrayH.forEach(element => {
-            if (element.value > event.target.value) {
-                element.disabled = true;
-            } else {
-                element.disabled = false;
-            }
-        });
-        setArrayD(dummyArrayH);
-    };
 
     useEffect(() => {
         window.addEventListener("resize", () => {
@@ -163,7 +104,7 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
             case 1:
                 return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden" }} size={drawerWidth * 0.8} />);
             case 2:
-                return <Tabla rows={dataFile} />
+                return <Tabla rows={dataFile} limiter={false} />
         }
     };
 
@@ -174,13 +115,14 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
                     <Box sx={{ maxHeight: window.innerHeight * 0.65 }} overflow={"auto"}>
                         <Grid item container border={1} borderColor={"lightgray"} borderRadius={2} xs={8}>
                             <Grid item xs={12}> <Skeleton variant="rectangular" animation="wave" height={window.innerHeight * 0.3} /> </Grid>
+                            <Grid item xs={12} paddingTop={3}> <Skeleton variant="rectangular" animation="wave" height={window.innerHeight * 0.3} /> </Grid>
                         </Grid>
                     </Box>
                 );
             case 1:
                 return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden" }} size={drawerWidth * 0.8} />);
             case 2:
-                return <Grafico rows={dataFile}/>
+                return <Grafico rows={dataFile} />
         }
     };
 
@@ -188,7 +130,7 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
         if (estado == 0 || estado == 2) {
             setEstado(1);
             blockManager(true);
-            invoke("create_file", { name: seleccionado })
+            invoke("create_full_file", { name: seleccionado })
                 .then(() => {
                     fs.readTextFile("Pantanos\\data.json", { dir: fs.BaseDirectory.Temp })
                         .then((message) => {
@@ -198,11 +140,58 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
 
                             let rows = [];
                             for (let i = 0; i < data["prediction"].length; i++) {
-                                rows.push({"expected": data["original"][i], "predicted": data["prediction"][i] })
+                                rows.push({ "expected": data["original"][i], "predicted": data["prediction"][i], "date": String(data["dates"][i]).substring(0, 10) })
                             }
                             setDataFile(rows);
                         });
                 })
+        }
+    };
+
+    const [minDate, setMinDate] = useState(dayjs("2012-01-01"))
+    const [maxDate, setMaxDate] = useState(dayjs("2022-12-30"))
+
+    const [estadoP, setEstadoP] = useState(0);
+    const [dataFileP, setDataFileP] = useState([])
+
+    const changeStateP = () => {
+        if (estado == 0 || estado == 2) {
+            setEstadoP(1);
+            invoke("create_prediction", { name: seleccionado, date: minDate.format("YYYY-MM-DD").toString(), number: (maxDate.diff(minDate, "d")).toString() })
+                .then(() => {
+                    fs.readTextFile("Pantanos\\prediction.json", { dir: fs.BaseDirectory.Temp })
+                        .then((message) => {
+                            let data = JSON.parse(message);
+                            let rows = [];
+                            for (let i = 0; i < data["prediction"].length; i++) {
+                                rows.push({ "predicted": data["prediction"][i], "date": String(data["dates"][i]), "expected": String(data["originals"][i]) })
+                            }
+                            setDataFileP(rows);
+                            setEstadoP(2);
+                        });
+                })
+        }
+    };
+
+    function renderTablaP(value) {
+        switch (value) {
+            case 0:
+                return <div />
+            case 1:
+                return (<CircularProgress sx={{ color: "#007a33", overflow: "hidden" }} size={drawerWidth * 0.8} />);
+            case 2:
+                return <Tabla rows={dataFileP} limiter={true} />
+        }
+    };
+
+    function renderGraphP(value) {
+        switch (value) {
+            case 0:
+                return <div />
+            case 1:
+                return <div />
+            case 2:
+                return <Grafico rows={dataFileP} />
         }
     };
 
@@ -231,71 +220,59 @@ const RigthDrawer = ({ open, handler, seleccionado, blockManager }) => {
                 {seleccionado}
             </Typography>
             <Divider />
-            <Typography variant="h6" component="div" color="inherit" margin={4}>
-                Rango de predicción:
-            </Typography>
-            <Grid container spacing={1} marginLeft={5} paddingRight={5}>
-                <Grid item>
-                    <FormControl variant="outlined" >
-                        <InputLabel>Desde:</InputLabel>
-                        <Select
-                            label="Desde"
-                            value={desde}
-                            onChange={handleDesde}
-                        >
-                            {arrayDesde.map(option => (
-                                <MenuItem value={option.value} disabled={option.disabled} key={"d" + option.value}>
-                                    {option.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid item>
-                    <Typography variant="h6" color="inherit" component="div" sx={{ margin: "5px" }}>
-                        -
-                    </Typography>
-                </Grid>
-                <Grid item>
-                    <FormControl variant="outlined" >
-                        <InputLabel>Hasta:</InputLabel>
-                        <Select
-                            label="Hasta"
-                            value={hasta}
-                            onChange={handleHasta}
-                        >
-                            {arrayHasta.map(option => (
-                                <MenuItem value={option.value} disabled={option.disabled} key={"h" + option.value}>
-                                    {option.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Grid>
 
-                <Box sx={{ width: '100%' }} marginTop={1}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Tabs value={tabValue} onChange={handleTabChange} variant={"scrollable"}>
-                            <Tab label="Tabla" {...a11yProps(0)} />
-                            <Tab label="Gráfica" {...a11yProps(1)} />
-                        </Tabs>
-                    </Box>
-                    <Grid item xs={12} xl={10}>
-                        <TabPanel value={tabValue} index={0} >
-                            {renderTabla(estado)}
-                        </TabPanel>
-                        <TabPanel value={tabValue} index={1}>
-                            {renderGraph(estado)}
-                        </TabPanel>
-                    </Grid>
+
+            <Box sx={{ width: '100%', paddingLeft: 2 }} marginTop={1}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Tabs value={tabValue} onChange={handleTabChange} variant={"scrollable"}>
+                        <Tab label="Tabla" {...a11yProps(0)} />
+                        <Tab label="Gráfica" {...a11yProps(1)} />
+                        <Tab label="Predecir" {...a11yProps(2)} />
+                    </Tabs>
                 </Box>
+                <Grid item xs={12} xl={10}>
+                    <TabPanel value={tabValue} index={0} >
+                        {renderTabla(estado)}
+                        <Grid item container direction={"row-reverse"} justifyContent={"flex-start"} alignItems={"center"} paddingRight={4} paddingTop={2}>
+                            <Grid item>
+                                <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={changeState} >Generar</Button>
+                            </Grid>
+                        </Grid>
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={1}>
+                        {renderGraph(estado)}
+                        <Grid item container direction={"row-reverse"} justifyContent={"flex-start"} alignItems={"center"} paddingRight={4} paddingTop={2}>
+                            <Grid item>
+                                <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={changeState} >Generar</Button>
+                            </Grid>
+                        </Grid>
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={2} >
+                        <div>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <Grid container alignItems={"center"} justifyContent={"center"} spacing={0} direction={"row"}>
+                                    <Grid item xs={6} xl={3} md={4}><DatePicker disableHighlightToday minDate={dayjs("2012-01-01")} maxDate={maxDate} format='YYYY/MM/DD' label="Desde" value={minDate} onChange={(newValue) => setMinDate(newValue)} /></Grid>
+                                    <Grid item ><Typography variant="h6" component="div" color="inherit" margin={3}>
+                                        -
+                                    </Typography></Grid>
+                                    <Grid item xs={6} xl={3} md={4}><DatePicker disableHighlightToday minDate={minDate} maxDate={dayjs("2022-12-30")} format='YYYY/MM/DD' label="Hasta" value={maxDate} onChange={(newValue) => setMaxDate(newValue)} /></Grid>
 
-                <Grid item container direction={"row-reverse"} justifyContent={"flex-start"} alignItems={"center"} paddingRight={4}>
-                    <Grid item>
-                        <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={changeState} marginBottom={5}>Generar</Button>
-                    </Grid>
+                                </Grid>
+                            </LocalizationProvider>
+                            {renderTablaP(estadoP)}
+                            {renderGraphP(estadoP)}
+                            <Grid item container direction={"row-reverse"} justifyContent={"flex-start"} alignItems={"center"} paddingRight={4} paddingTop={2}>
+                                <Grid item>
+                                    <Button variant='contained' sx={{ backgroundColor: "#007a33" }} onClick={() => changeStateP()}>Generar</Button>
+                                </Grid>
+                            </Grid>
+                        </div>
+                    </TabPanel>
                 </Grid>
-            </Grid>
+            </Box>
+
+
+
         </Drawer >
     )
 }

@@ -8,15 +8,25 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 
-const Tabla = ({ rows }) => {
+const Tabla = ({ rows, limiter }) => {
 
     const columns = [
-        { id: 'expected', label: 'Original', align: 'right',},
-        { id: 'predicted', label: 'Predicción', align: 'right'}
+        { id: 'date', label: 'Fecha', align: 'right' },
+        { id: 'expected', label: 'Original', align: 'right', },
+        { id: 'predicted', label: 'Predicción', align: 'right' }
     ];
 
+
+    let initialLimiter = 0
+    if (limiter) {
+        initialLimiter = 7
+    } else {
+        initialLimiter = 20
+    }
+
+
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(20);
+    const [rowsPerPage, setRowsPerPage] = useState(initialLimiter);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -26,6 +36,14 @@ const Tabla = ({ rows }) => {
         setRowsPerPage(+event.target.value);
         setPage(0);
     };
+
+
+    let limitation = []
+    if (limiter) {
+        limitation = [7]
+    } else {
+        limitation = [20, 180, 365]
+    }
 
     return (
         <Paper sx={{ overflow: 'hidden' }} variant='outlined'>
@@ -67,7 +85,7 @@ const Tabla = ({ rows }) => {
                 </Table>
             </TableContainer>
             <TablePagination
-                rowsPerPageOptions={[20, 180, 365]}
+                rowsPerPageOptions={limitation}
                 component="div"
                 count={rows.length}
                 rowsPerPage={rowsPerPage}
