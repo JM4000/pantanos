@@ -61,95 +61,6 @@ class LSTM(nn.Module):
 
         return out
 
-
-def concatenarAnnos(nombre: str):
-    anno12 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2012-01-01_2012-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno13 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2013-01-01_2013-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno14 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2014-01-01_2014-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno15 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2015-01-01_2015-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno16 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2016-01-01_2016-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno17 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2017-01-01_2017-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno18 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2018-01-01_2018-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno19 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2019-01-01_2019-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno20 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2020-01-01_2020-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno21 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2021-01-01_2021-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-    anno22 = pd.read_csv(
-        "./Data/Datasets/" + nombre + "/" + nombre + " 2022-01-01_2022-12-30.csv",
-        index_col=[0],
-        parse_dates=True,
-        dayfirst=True,
-    )
-
-    annoDF = pd.concat(
-        [
-            anno12,
-            anno13,
-            anno14,
-            anno15,
-            anno16,
-            anno17,
-            anno18,
-            anno19,
-            anno20,
-            anno21,
-            anno22,
-        ],
-        axis=0,
-    )
-
-    return annoDF
-
-
 def sliding_windows(data, seq_length):
     x = []
     y = []
@@ -204,7 +115,7 @@ color_pal = [
 
 torch.device("cpu")
 
-dataset = concatenarAnnos(name)
+dataset = pd.read_csv("./Data/Datasets/"+name+".csv", index_col=[0], parse_dates=True, dayfirst=True)
 model = torch.load("./Data/Modelos/" + name + ".pt", map_location=torch.device("cpu"))
 seq_length = 21
 

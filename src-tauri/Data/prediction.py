@@ -8,6 +8,7 @@ import tempfile
 import json
 from json import JSONEncoder
 import os
+import datetime
 
 class GRU(nn.Module):
     def __init__(self, num_classes, input_size, hidden_size, num_layers, seq_length):
@@ -57,22 +58,6 @@ class LSTM(nn.Module):
         out = self.fc(h_out)
         
         return out
-def concatenarAnnos(nombre: str):
-    anno14 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2014-01-01_2014-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno12 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2012-01-01_2012-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno15 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2015-01-01_2015-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno16 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2016-01-01_2016-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno17 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2017-01-01_2017-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno18 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2018-01-01_2018-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno19 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2019-01-01_2019-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno13 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2013-01-01_2013-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno20 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2020-01-01_2020-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno21 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2021-01-01_2021-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-    anno22 = pd.read_csv("./Data/Datasets/"+nombre+"/"+nombre+" 2022-01-01_2022-12-30.csv", index_col=[0], parse_dates=True, dayfirst=True)
-
-    annoDF = pd.concat([anno12, anno13,anno14,anno15,anno16,anno17,anno18,anno19,anno20,anno21,anno22], axis=0)
-    
-    return annoDF
     
 def sliding_windows(data, seq_length):
     x = []
@@ -116,7 +101,7 @@ color_pal = ["#F8766D", "#D39200", "#93AA00", "#00BA38", "#00C19F", "#00B9E3", "
 
 torch.device("cpu")
 
-dataset = concatenarAnnos(name)
+dataset = pd.read_csv("./Data/Datasets/"+name+".csv", index_col=[0], parse_dates=True, dayfirst=True)
 model = torch.load("./Data/Modelos/"+name+".pt", map_location=torch.device('cpu'))
 seq_length = 21
     
@@ -129,16 +114,8 @@ x, y = sliding_windows(training_data, seq_length)
 model.cpu()
 model.eval()
 
-index = -1
-date = np.datetime64(fecha)
-while index < 0:
-    try:
-        if date < np.datetime64("2012-01-01") or date > np.datetime64("2022-12-30"):
-            date = np.datetime64("2012-01-01")
-        index = dataset.index.get_loc(date)
-    except KeyError:
-        date += 1
-        
+index = dataset.index.get_loc(fecha)
+
 newWindow = np.array([x[index-(seq_length-1)]])
 predictionsDummy = []
 for i in range(distancia):
@@ -151,15 +128,17 @@ for i in predictionsDummy:
     predictions.append(i[0][0])
 predictions = sc.inverse_transform([predictions])[0]
 
+predictionsRound = []
+for i in predictions:
+    predictionsRound.append(round(i,2))
+
 fechas = []
 originales = []
+date = datetime.datetime.strptime(fecha, "%Y-%m-%d")
 for i in range(distancia):
     fechas.append(str(date))
-    if date in dataset.index:
-        originales.append(str(dataset.loc[[date]].values[0][0]))
-    else:
-        originales.append("NIL")
-    date += 1
+    originales.append(str(dataset.loc[str(date.date())]["Reserva"]))
+    date += datetime.timedelta(1)
 
 tempFolder = tempfile.gettempdir()+"/Pantanos"
 checkFolder = os.path.isdir(tempFolder)
@@ -169,4 +148,4 @@ if not checkFolder:
     os.makedirs(tempFolder)
 
 with open(tempFolder+"/prediction.json", "w") as tmpFile:
-    json.dump({"prediction":np.array(predictions), "dates": np.array(fechas), "originals": np.array(originales)}, tmpFile, cls=NumpyArrayEncoder)
+    json.dump({"prediction":np.array(predictionsRound), "dates": np.array(fechas), "originals": np.array(originales)}, tmpFile, cls=NumpyArrayEncoder)
