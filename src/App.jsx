@@ -4,6 +4,7 @@ import RigthDrawer from './components/RigthDrawer';
 import Mapa from './components/Mapa';
 
 function App() {
+    //document.addEventListener('contextmenu', event => event.preventDefault());
     const [open, setOpen] = React.useState(false);
     const [selected, setSelected] = React.useState("None");
     const [block, setBlock] = React.useState(false);

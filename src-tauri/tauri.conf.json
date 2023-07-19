@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "pantanos",
-    "version": "0.0.0"
+    "productName": "Pantanos de Andalucía",
+    "version": "1.0.0"
   },
   "tauri": {
     "allowlist": {
@@ -23,6 +23,9 @@
       }
     },
     "bundle": {
+      "resources": [
+        "Data/*"
+      ],
       "active": true,
       "icon": [
         "icons/32x32.png",
@@ -31,8 +34,16 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
-      "targets": "all"
+      "identifier": "com.dams.uma.dev",
+      "targets": "msi",
+      "windows": {
+        "wix": {
+          "language": "es-ES"
+        },
+        "webviewInstallMode": {
+          "type": "offlineInstaller"
+        }
+      }
     },
     "security": {
       "csp": null
